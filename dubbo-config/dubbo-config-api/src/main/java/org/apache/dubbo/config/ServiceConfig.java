@@ -262,6 +262,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 monitor = application.getMonitor();
             }
         }
+        // 泛化接口实现
         if (ref instanceof GenericService) {
             interfaceClass = GenericService.class;
             if (StringUtils.isEmpty(generic)) {
@@ -278,6 +279,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             checkRef();
             generic = Boolean.FALSE.toString();
         }
+//        @Deprecated
         if (local != null) {
             if ("true".equals(local)) {
                 local = interfaceName + "Local";
@@ -359,6 +361,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
+    /**
+     * 基于单个协议，暴露服务
+     *
+     * @param protocolConfig 协议配置对象
+     * @param registryURLs 注册中心链接对象数组
+     */
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         String name = protocolConfig.getName();
         if (name == null || name.length() == 0) {
@@ -478,6 +486,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
 
         String scope = url.getParameter(Constants.SCOPE_KEY);
+
+        /**
+         * 再此之前都是在不断的积累参数，为了生成URL
+         * 本地 或 远程暴露
+         */
         // don't export when none is configured
         if (!Constants.SCOPE_NONE.equalsIgnoreCase(scope)) {
 
@@ -492,9 +505,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 }
                 if (registryURLs != null && !registryURLs.isEmpty()) {
                     for (URL registryURL : registryURLs) {
+                        // "dynamic" 配置项，服务是否动态注册。如果设为 false ，注册后将显示后 disable 状态，需人工启用，并且服务提供者停止时，也不会自动取消册，需人工禁用。
                         url = url.addParameterIfAbsent(Constants.DYNAMIC_KEY, registryURL.getParameter(Constants.DYNAMIC_KEY));
+                        // 获得监控中心 URL
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
+                            // 服务提供者的 URL 中，包含了监控中心的配置
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                         }
                         if (logger.isInfoEnabled()) {
@@ -514,6 +530,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         exporters.add(exporter);
                     }
                 } else {
+                    // 用于被服务消费者直连服务提供者
                     Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
                     DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
 
@@ -525,6 +542,10 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         this.urls.add(url);
     }
 
+    /**
+     * 本地暴露服务
+     * @param url 注册中心URL
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void exportLocal(URL url) {
         if (!Constants.LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
@@ -532,7 +553,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                     .setProtocol(Constants.LOCAL_PROTOCOL)
                     .setHost(LOCALHOST)
                     .setPort(0);
+
+            // 添加服务的真实类名，例如 DemoServiceImpl ，仅用于 RestProtocol 中。
             ServiceClassHolder.getInstance().pushServiceClass(getServiceClass(ref));
+
+            // 使用 ProxyFactory 创建 Invoker 对象
+            // 使用 Protocol 暴露 Invoker 对象
             Exporter<?> exporter = protocol.export(
                     proxyFactory.getInvoker(ref, (Class) interfaceClass, local));
             exporters.add(exporter);
@@ -701,6 +727,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (provider == null) {
             provider = new ProviderConfig();
         }
+//        加载各种Config配置，包括ProviderConfig
         appendProperties(provider);
     }
 

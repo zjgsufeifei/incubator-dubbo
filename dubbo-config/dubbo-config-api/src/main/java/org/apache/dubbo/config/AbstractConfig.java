@@ -110,6 +110,7 @@ public abstract class AbstractConfig implements Serializable {
                             logger.info("Use System Property " + pn + " to config dubbo");
                         }
                     }
+                    //从启动参数中获取
                     if (value == null || value.length() == 0) {
                         String pn = prefix + property;
                         value = System.getProperty(pn);
@@ -117,6 +118,7 @@ public abstract class AbstractConfig implements Serializable {
                             logger.info("Use System Property " + pn + " to config dubbo");
                         }
                     }
+                    //从XML参数中获取
                     if (value == null || value.length() == 0) {
                         Method getter;
                         try {
@@ -128,6 +130,7 @@ public abstract class AbstractConfig implements Serializable {
                                 getter = null;
                             }
                         }
+                        //从properties中获取
                         if (getter != null) {
                             if (getter.invoke(config) == null) {
                                 if (config.getId() != null && config.getId().length() > 0) {

@@ -156,6 +156,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    /**
+     * 加载注册中心 URL 数组
+     * 把每个注册中心地址 转化为 一个URL
+     */
     protected List<URL> loadRegistries(boolean provider) {
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();

@@ -129,13 +129,18 @@ public class RegistryProtocol implements Protocol {
 
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
-        //export invoker
+        // 暴露服务
+        // export invoker
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker);
 
+        // 获得注册中心 URL
         URL registryUrl = getRegistryUrl(originInvoker);
 
+        // 获得注册中心对象
         //registry provider
         final Registry registry = getRegistry(originInvoker);
+
+        // 获得服务提供者 URL
         final URL registedProviderUrl = getRegistedProviderUrl(originInvoker);
 
         //to judge to delay publish whether or not
@@ -294,6 +299,16 @@ public class RegistryProtocol implements Protocol {
         return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension("mergeable");
     }
 
+     /**
+     * 执行服务引用，返回 Invoker 对象
+     *
+     * @param cluster Cluster 对象
+     * @param registry 注册中心对象
+     * @param type 服务接口类型
+     * @param url 注册中心 URL
+     * @param <T> 泛型
+     * @return Invoker 对象
+      */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
         directory.setRegistry(registry);
@@ -301,16 +316,21 @@ public class RegistryProtocol implements Protocol {
         // all attributes of REFER_KEY
         Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters());
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, parameters.remove(Constants.REGISTER_IP_KEY), 0, type.getName(), parameters);
+
+        // 向注册中心注册自己（服务消费者）
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface())
                 && url.getParameter(Constants.REGISTER_KEY, true)) {
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
+
+        // 向注册中心订阅服务提供者
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY,
                 Constants.PROVIDERS_CATEGORY
                         + "," + Constants.CONFIGURATORS_CATEGORY
                         + "," + Constants.ROUTERS_CATEGORY));
 
+        // 创建merge Invoker 对象
         Invoker invoker = cluster.join(directory);
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;

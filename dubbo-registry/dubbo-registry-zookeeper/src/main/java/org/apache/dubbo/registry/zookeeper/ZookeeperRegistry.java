@@ -129,6 +129,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     protected void doSubscribe(final URL url, final NotifyListener listener) {
         try {
+            // 处理所有 Service 层的发起订阅，例如监控中心的订阅
             if (Constants.ANY_VALUE.equals(url.getServiceInterface())) {
                 String root = toRootPath();
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
@@ -164,6 +165,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     }
                 }
             } else {
+                // 处理指定 Service 层的发起订阅，例如服务消费者的订阅
                 List<URL> urls = new ArrayList<URL>();
                 for (String path : toCategoriesPath(url)) {
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
